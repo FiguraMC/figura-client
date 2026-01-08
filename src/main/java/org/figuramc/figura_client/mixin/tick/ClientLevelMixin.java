@@ -38,12 +38,12 @@ public class ClientLevelMixin {
 
     @Unique
     private void callTickMethod(Entity entity) {
-        AvatarView<UUID> avatarView = AvatarManagers.tryGetEntityAvatar(new MinecraftEntityImpl<>(entity));
+        AvatarView<UUID> avatarView = AvatarManagers.tryGetEntityAvatar(new MinecraftEntityImpl(entity));
 
         if (avatarView == null) return;
         avatarView.use(avatar -> {
             try (
-                    EntityView<MinecraftEntityImpl<?>> entityView = new EntityView<>(new MinecraftEntityImpl<>(entity));
+                    EntityView<MinecraftEntityImpl> entityView = new EntityView<>(new MinecraftEntityImpl(entity));
                     WorldView<MinecraftWorldImpl> worldView = new WorldView<>(new MinecraftWorldImpl((ClientLevel) (Object) this))
             ) {
                 @Nullable AvatarEvents events = avatar.getComponent(AvatarEvents.TYPE);

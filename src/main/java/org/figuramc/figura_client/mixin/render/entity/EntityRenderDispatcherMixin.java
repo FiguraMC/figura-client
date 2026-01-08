@@ -58,7 +58,7 @@ public abstract class EntityRenderDispatcherMixin {
         EntityRenderStateAccess access = (EntityRenderStateAccess) entityRenderState;
         access.figura_client$reset();
 
-        AvatarView<UUID> view = AvatarManagers.tryGetEntityAvatar(new MinecraftEntityImpl<>(entity));
+        AvatarView<UUID> view = AvatarManagers.tryGetEntityAvatar(new MinecraftEntityImpl(entity));
         if (view == null) return entityRenderState;
 
         // We have an avatar here.
@@ -66,7 +66,7 @@ public abstract class EntityRenderDispatcherMixin {
 
         view.use(avatar -> {
             try (
-                    EntityView<?> entityView = new EntityView<>(new MinecraftEntityImpl<>(entity));
+                    EntityView<?> entityView = new EntityView<>(new MinecraftEntityImpl(entity));
                     WorldView<MinecraftWorldImpl> worldView = new WorldView<>(new MinecraftWorldImpl((ClientLevel) entity.level()))
             ) {
                 FiguraCallbackSubmit submission = RenderUtils.invokeRenderEvent(avatar, ProfilingCategory.ENTITY_RENDER_EVENT, ProfilingCategory.ENTITY_RENDER_EVENT, Event.ENTITY_RENDER, new CallbackItem.Tuple3<>(

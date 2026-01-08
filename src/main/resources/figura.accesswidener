@@ -27,3 +27,7 @@ accessible field com/mojang/blaze3d/opengl/GlBuffer handle I
 accessible method com/mojang/blaze3d/vertex/VertexFormat <init> (Ljava/util/List;Ljava/util/List;Lit/unimi/dsi/fastutil/ints/IntList;I)V
 accessible field com/mojang/blaze3d/pipeline/RenderPipeline$Builder definesBuilder Ljava/util/Optional;
 accessible method net/minecraft/client/renderer/rendertype/RenderType create (Ljava/lang/String;Lnet/minecraft/client/renderer/rendertype/RenderSetup;)Lnet/minecraft/client/renderer/rendertype/RenderType;
+
+# World data
+accessible method net/minecraft/world/entity/Entity isInRain ()Z
+accessible method net/minecraft/world/entity/LivingEntity getCurrentSwingDuration ()I

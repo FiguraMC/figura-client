@@ -81,8 +81,8 @@ layout (binding = 0, std140) readonly buffer PartDataBuffer {
 
 // Default definition:
 // #define FIGURA_HOOKS \
-// void figura_part_space_hook(inout vec3 pos, inout vec3 normal, inout vec3 tangent) {} \
-// void figura_model_space_hook(inout vec4 pos, inout vec3 normal, inout vec3 tangent, inout vec4 color, inout vec2 lightUV) {}
+// void FIGURA_PART_SPACE_HOOK(inout vec3 pos, inout vec3 normal, inout vec3 tangent) {} \
+// void FIGURA_MODEL_SPACE_HOOK(inout vec4 pos, inout vec3 normal, inout vec3 tangent, inout vec4 color, inout vec2 lightUV) {}
 
 FIGURA_HOOKS
 
@@ -92,7 +92,7 @@ void figura_compute_weights(
     out vec4 pos, out vec3 normal, out vec3 tangent, out vec4 color, out vec2 lightUV
 ) {
     // Process inputs in part space
-    figura_part_space_hook(Position, Normal, Tangent);
+    FIGURA_PART_SPACE_HOOK(Position, Normal, Tangent);
     // Apply transforms
     pos = vec4(0.0);
     normal = vec3(0.0);
@@ -134,7 +134,7 @@ void figura_compute_weights(
     normal = normalize(normal);
     tangent = normalize(tangent);
     // Process outputs in model space
-    figura_model_space_hook(pos, normal, tangent, color, lightUV);
+    FIGURA_MODEL_SPACE_HOOK(pos, normal, tangent, color, lightUV);
 }
 
 void main() {
