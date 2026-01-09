@@ -9,15 +9,22 @@ import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.blaze3d.textures.GpuTexture;
+import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
+import org.figuramc.figura_client.FiguraClient;
 import org.figuramc.figura_client.renderer.part.FiguraClientPartRenderer;
 import org.figuramc.figura_client.renderer.part.text_rendering.FiguraTextRenderer;
 import org.figuramc.figura_client.util.RenderUtils;
 import org.figuramc.figura_core.avatars.errors.AvatarError;
 import org.figuramc.figura_core.avatars.errors.AvatarOutOfMemoryError;
+import org.figuramc.figura_core.data.materials.ModuleMaterials;
+import org.figuramc.figura_core.minecraft_interop.FiguraConnectionPoint;
+import org.figuramc.figura_core.minecraft_interop.texture.MinecraftTexture;
 import org.figuramc.figura_core.model.part.tasks.TextTask;
+import org.figuramc.figura_core.model.rendering.FiguraRenderType;
 import org.figuramc.figura_core.model.rendering.PartDataStruct;
 import org.figuramc.figura_core.model.rendering.RenderingRoot;
 import org.figuramc.figura_core.model.rendering.vertex.FiguraVertexFormat;
@@ -153,14 +160,9 @@ public class OptimizedRenderer extends FiguraClientPartRenderer {
                     float alpha = 1f - u * 0.75f;
                     new Vector4f(1f, 1f, 1f, alpha).get(128, buf);
                 }
-                // Builtin UV modifiers...? Too hardcoded?
+                // Apply UV modifiers (There's exactly 4 of them... TODO is this too hardcoded? Should we increase the number of modifiers or try to make it dynamic somehow?)
                 for (int i = 0; i < 4; i++) {
-                    var figuraBinding = ListUtils.getOrNull(drawCall.base.renderType().textureBindings(), i);
-                    if (figuraBinding == null) {
-                        new Vector4f(0, 0, 1, 1).get(144 + i * 16, buf);
-                    } else {
-                        figuraBinding.uvModifier().get(144 + i * 16, buf);
-                    }
+                    drawCall.base.renderType().textureBindings().get(i).uvModifier().get(144 + i * 16, buf);
                 }
                 // Screen size
                 new Vector2f(Minecraft.getInstance().getWindow().getWidth(), Minecraft.getInstance().getWindow().getHeight()).get(208, buf);
@@ -190,27 +192,14 @@ public class OptimizedRenderer extends FiguraClientPartRenderer {
                 // Uniforms
                 RenderSystem.bindDefaultUniforms(pass);
                 pass.setUniform("FiguraUniforms", uniformsBufferSlice);
-                // Textures (Pain)
-                var main_binding = ListUtils.getOrNull(drawCall.base.renderType().textureBindings(), 0);
-                var main_handle = main_binding == null ? null : main_binding.textureHandle();
-                var main_gpuTex = RenderUtils.texToGpuTextureView(main_handle);
-                var main_tex = main_gpuTex == null ? RenderUtils.ZERO_PIXEL.getTextureView() : main_gpuTex;
-                pass.bindTexture("Main", main_tex, RenderSystem.getSamplerCache().getRepeat(FilterMode.NEAREST));
-                var normal_binding = ListUtils.getOrNull(drawCall.base.renderType().textureBindings(), 1);
-                var normal_handle = normal_binding == null ? null : normal_binding.textureHandle();
-                var normal_gpuTex = RenderUtils.texToGpuTextureView(normal_handle);
-                var normal_tex = normal_gpuTex == null ? RenderUtils.DEFAULT_NORMAL_MAP.getTextureView() : normal_gpuTex;
-                pass.bindTexture("NormalMap", normal_tex, RenderSystem.getSamplerCache().getRepeat(FilterMode.NEAREST));
-                var specular_binding = ListUtils.getOrNull(drawCall.base.renderType().textureBindings(), 2);
-                var specular_handle = specular_binding == null ? null : specular_binding.textureHandle();
-                var specular_gpuTex = RenderUtils.texToGpuTextureView(specular_handle);
-                var specular_tex = specular_gpuTex == null ? RenderUtils.ZERO_PIXEL.getTextureView() : specular_gpuTex;
-                pass.bindTexture("SpecularMap", specular_tex, RenderSystem.getSamplerCache().getRepeat(FilterMode.NEAREST));
-                var lightmap_binding = ListUtils.getOrNull(drawCall.base.renderType().textureBindings(), 3);
-                var lightmap_handle = lightmap_binding == null ? null : lightmap_binding.textureHandle();
-                var lightmap_gpuTex = RenderUtils.texToGpuTextureView(lightmap_handle);
-                var lightmap_tex = lightmap_gpuTex == null ? Minecraft.getInstance().gameRenderer.lightTexture().getTextureView() : lightmap_gpuTex;
-                pass.bindTexture("LightMap", lightmap_tex, RenderSystem.getSamplerCache().getRepeat(FilterMode.LINEAR)); // Linear filter on lightmap for smooth lighting
+                // Iterate textures and bind them
+                for (int i = 0; i < drawCall.base.renderType().textureBindings().size(); i++) {
+                    String name = drawCall.base.renderType().shader().textureBindingPoints().get(i);
+                    FiguraRenderType.TextureBinding binding = drawCall.base.renderType().textureBindings().get(i);
+                    GpuTextureView gpuTextureView = RenderUtils.texToGpuTextureView(binding.textureHandle());
+                    FilterMode filterMode = i == 3 ? FilterMode.LINEAR : FilterMode.NEAREST; // TODO: Non-hardcoded smooth lighting for the lightmap texture!
+                    pass.bindTexture(name, gpuTextureView, RenderSystem.getSamplerCache().getRepeat(filterMode));
+                }
 
                 // TODO: Add workaround for if SSBO isn't supported (or we're somehow not using OpenGL backend?)
                 GL46.glBindBufferBase(GL46.GL_SHADER_STORAGE_BUFFER, 0, ((GlBuffer) state.transformsBuffer).handle);

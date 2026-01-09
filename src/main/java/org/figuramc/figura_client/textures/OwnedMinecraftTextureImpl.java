@@ -9,6 +9,8 @@ import com.mojang.blaze3d.textures.TextureFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.render.TextureSetup;
 import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.client.renderer.texture.SimpleTexture;
+import net.minecraft.client.renderer.texture.TextureContents;
 import net.minecraft.resources.Identifier;
 import org.figuramc.figura_client.FiguraClient;
 import org.figuramc.figura_client.util.RenderUtils;
@@ -87,28 +89,22 @@ public class OwnedMinecraftTextureImpl extends AbstractTexture implements OwnedM
 
     @Override
     public CompletableFuture<Void> commit() {
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        RenderUtils.runOnRenderThread(() -> {
+        return RenderUtils.runOnRenderThread(() -> {
             if (!isClosed()) {
                 createGpuTexIfNeeded();
                 RenderSystem.getDevice().createCommandEncoder().writeToTexture(this.texture, this.backingTexture);
             }
-            future.complete(null);
         });
-        return future;
     }
 
     @Override
     public CompletableFuture<Void> commitRegion(int x, int y, int width, int height) {
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        RenderUtils.runOnRenderThread(() -> {
+        return RenderUtils.runOnRenderThread(() -> {
             if (!isClosed()) {
                 createGpuTexIfNeeded();
                 RenderSystem.getDevice().createCommandEncoder().writeToTexture(this.texture, this.backingTexture, 0, 0, x, y, width, height, x, y);
             }
-            future.complete(null);
         });
-        return future;
     }
 
     @Override

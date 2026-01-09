@@ -10,14 +10,14 @@ import net.minecraft.util.ARGB;
 import net.minecraft.util.Util;
 import org.figuramc.figura_client.FiguraClient;
 import org.figuramc.figura_client.renderer.submit.FiguraCallbackSubmit;
-import org.figuramc.figura_client.textures.MinecraftTextureImpl;
+import org.figuramc.figura_client.textures.AtlasedMinecraftTextureImpl;
+import org.figuramc.figura_client.textures.StandaloneMinecraftTextureImpl;
 import org.figuramc.figura_client.textures.OwnedMinecraftTextureImpl;
 import org.figuramc.figura_core.avatars.Avatar;
 import org.figuramc.figura_core.avatars.components.AvatarEvents;
 import org.figuramc.figura_core.manage.AvatarView;
 import org.figuramc.figura_core.minecraft_interop.texture.MinecraftTexture;
 import org.figuramc.figura_core.script_hooks.Event;
-import org.figuramc.figura_core.script_hooks.EventListener;
 import org.figuramc.figura_core.script_hooks.callback.items.CallbackItem;
 import org.figuramc.figura_core.script_hooks.callback.items.CallbackView;
 import org.figuramc.figura_core.script_hooks.timing.AvatarTimeTracker;
@@ -27,6 +27,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
 
 public class RenderUtils {
@@ -36,30 +37,11 @@ public class RenderUtils {
     // Whether said avatar view is for a living entity
     public static final NullEmptyStack<Boolean> IS_LIVING_ENTITY_STACK = new NullEmptyStack<>(); // TODO look for a maybe better way to do this?
 
-    // Convert a MinecraftTexture to an actual game resource
-    public static Identifier texToLocation(@Nullable MinecraftTexture texture, Identifier defaultVal) {
-        return switch (texture) {
-            case MinecraftTextureImpl impl -> impl.location;
-            case OwnedMinecraftTextureImpl ownedImpl -> ownedImpl.location;
-            case null -> defaultVal;
-            default -> throw new IllegalStateException("Unexpected implementation of MinecraftTexture: " + texture.getClass());
-        };
-    }
-
-    @Contract("null -> null;!null -> !null")
-    public static GpuTexture texToGpuTexture(@Nullable MinecraftTexture texture) {
-        return switch (texture) {
-            case MinecraftTextureImpl impl -> impl.backing.getTexture();
-            case OwnedMinecraftTextureImpl ownedImpl -> ownedImpl.getTexture();
-            case null -> null;
-            default -> throw new IllegalStateException("Unexpected implementation of MinecraftTexture: " + texture.getClass());
-        };
-    }
-
     @Contract("null -> null;!null -> !null")
     public static GpuTextureView texToGpuTextureView(@Nullable MinecraftTexture texture) {
         return switch (texture) {
-            case MinecraftTextureImpl impl -> impl.backing.getTextureView();
+            case StandaloneMinecraftTextureImpl impl -> impl.textureView;
+            case AtlasedMinecraftTextureImpl impl -> impl.atlas.getTextureView();
             case OwnedMinecraftTextureImpl ownedImpl -> ownedImpl.getTextureView();
             case null -> null;
             default -> throw new IllegalStateException("Unexpected implementation of MinecraftTexture: " + texture.getClass());
@@ -91,8 +73,13 @@ public class RenderUtils {
 
     // Run tasks on the render thread
     public static final Queue<Runnable> TASKS = new ConcurrentLinkedDeque<>();
-    public static void runOnRenderThread(Runnable task) {
-        TASKS.add(task);
+    public static CompletableFuture<Void> runOnRenderThread(Runnable task) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        TASKS.add(() -> {
+            task.run();
+            future.complete(null);
+        });
+        return future;
     }
 
     // Running rendering events, a couple mixins use this
