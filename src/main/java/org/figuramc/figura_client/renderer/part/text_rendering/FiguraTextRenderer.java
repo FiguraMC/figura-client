@@ -26,8 +26,8 @@ import java.util.ArrayList;
 public class FiguraTextRenderer {
 
     // Exposed method to do rendering.
-    public static void render(FormattedText formattedText, MultiBufferSource bufferSource, FiguraTransformStack matrixStack, int light, int overlay) {
-        FiguraTextRenderer renderer = new FiguraTextRenderer(bufferSource, matrixStack.peekPosition(), light, overlay);
+    public static void render(FormattedText formattedText, MultiBufferSource bufferSource, Matrix4f worldRelativeMatrix, int light, int overlay) {
+        FiguraTextRenderer renderer = new FiguraTextRenderer(bufferSource, worldRelativeMatrix, light, overlay);
         renderer.processChars(formattedText, 0);
         renderer.renderLine(); // Flush the final line
     }

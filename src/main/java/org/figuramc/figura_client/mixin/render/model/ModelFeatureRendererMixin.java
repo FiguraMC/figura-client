@@ -57,6 +57,10 @@ public class ModelFeatureRendererMixin {
                 // Therefore, they should be in figura's coordinate space, and *relative* to default position.
                 // They should also be affected by figura's modifications, so animations can move them.
 
+                // Visibility
+                if (vanillaRendering.hideAllModelParts || !scriptPart.figuraTransform.getVisible())
+                    vanillaPart.visible = false;
+
                 // Origin
                 temp.set(scriptPart.figuraTransform.totalOrigin());
                 scriptPart.storedVanillaOrigin.set(temp);

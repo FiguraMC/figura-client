@@ -4,6 +4,7 @@ import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.ShaderDefines;
 import org.figuramc.figura_client.FiguraClient;
 import org.figuramc.figura_core.model.rendering.shader.BuiltinShader;
@@ -18,25 +19,53 @@ import java.util.Optional;
 
 public class CustomRenderPipelines {
 
-    public static final CustomVertexFormat DEFAULT_VERTEX_FORMAT = new CustomVertexFormat(FiguraVertexFormat.DEFAULT);
+    public static final CustomVertexFormat ALBEDO_VERTEX_FORMAT = new CustomVertexFormat(FiguraVertexFormat.ALBEDO);
+    public static final CustomVertexFormat ALBEDO_NORMAL_VERTEX_FORMAT = new CustomVertexFormat(FiguraVertexFormat.ALBEDO_NORMAL);
+    public static final CustomVertexFormat ALBEDO_SPECULAR_VERTEX_FORMAT = new CustomVertexFormat(FiguraVertexFormat.ALBEDO_SPECULAR);
+    public static final CustomVertexFormat ALBEDO_NORMAL_SPECULAR_VERTEX_FORMAT = new CustomVertexFormat(FiguraVertexFormat.ALBEDO_NORMAL_SPECULAR);
 
     // Base snippets without additional extensions
-    private static final RenderPipeline.Snippet BASIC_SNIPPET = RenderPipeline.builder()
-            // Uniforms
-            .withUniform("Fog", UniformType.UNIFORM_BUFFER)
-            .withUniform("Projection", UniformType.UNIFORM_BUFFER)
-            .withUniform("Lighting", UniformType.UNIFORM_BUFFER)
+    private static final RenderPipeline.Snippet ALBEDO_SNIPPET = RenderPipeline.builder(RenderPipelines.MATRICES_FOG_LIGHT_DIR_SNIPPET)
             .withUniform("FiguraUniforms", UniformType.UNIFORM_BUFFER)
-            // Textures
-            .withSampler("Main")
-            .withSampler("NormalMap")
-            .withSampler("SpecularMap")
+            .withSampler("Albedo")
             .withSampler("LightMap")
-            // Shaders
-            .withVertexShader(FiguraClient.locate("core/figura_basic"))
-            .withFragmentShader(FiguraClient.locate("core/figura_basic"))
-            // Other
-            .withVertexFormat(DEFAULT_VERTEX_FORMAT, VertexFormat.Mode.QUADS)
+            .withVertexShader(FiguraClient.locate("core/figura_albedo"))
+            .withFragmentShader(FiguraClient.locate("core/figura_albedo"))
+            .withVertexFormat(ALBEDO_VERTEX_FORMAT, VertexFormat.Mode.QUADS)
+            .withBlend(BlendFunction.TRANSLUCENT)
+            .withCull(false)
+            .buildSnippet();
+    private static final RenderPipeline.Snippet ALBEDO_NORMAL_SNIPPET = RenderPipeline.builder(RenderPipelines.MATRICES_FOG_LIGHT_DIR_SNIPPET)
+            .withUniform("FiguraUniforms", UniformType.UNIFORM_BUFFER)
+            .withSampler("Albedo")
+            .withSampler("Normal")
+            .withSampler("LightMap")
+            .withVertexShader(FiguraClient.locate("core/figura_albedo_normal"))
+            .withFragmentShader(FiguraClient.locate("core/figura_albedo_normal"))
+            .withVertexFormat(ALBEDO_NORMAL_VERTEX_FORMAT, VertexFormat.Mode.QUADS)
+            .withBlend(BlendFunction.TRANSLUCENT)
+            .withCull(false)
+            .buildSnippet();
+    private static final RenderPipeline.Snippet ALBEDO_SPECULAR_SNIPPET = RenderPipeline.builder(RenderPipelines.MATRICES_FOG_LIGHT_DIR_SNIPPET)
+            .withUniform("FiguraUniforms", UniformType.UNIFORM_BUFFER)
+            .withSampler("Albedo")
+            .withSampler("Specular")
+            .withSampler("LightMap")
+            .withVertexShader(FiguraClient.locate("core/figura_albedo_specular"))
+            .withFragmentShader(FiguraClient.locate("core/figura_albedo_specular"))
+            .withVertexFormat(ALBEDO_SPECULAR_VERTEX_FORMAT, VertexFormat.Mode.QUADS)
+            .withBlend(BlendFunction.TRANSLUCENT)
+            .withCull(false)
+            .buildSnippet();
+    private static final RenderPipeline.Snippet ALBEDO_NORMAL_SPECULAR_SNIPPET = RenderPipeline.builder(RenderPipelines.MATRICES_FOG_LIGHT_DIR_SNIPPET)
+            .withUniform("FiguraUniforms", UniformType.UNIFORM_BUFFER)
+            .withSampler("Albedo")
+            .withSampler("Normal")
+            .withSampler("Specular")
+            .withSampler("LightMap")
+            .withVertexShader(FiguraClient.locate("core/figura_albedo_normal_specular"))
+            .withFragmentShader(FiguraClient.locate("core/figura_albedo_normal_specular"))
+            .withVertexFormat(ALBEDO_NORMAL_SPECULAR_VERTEX_FORMAT, VertexFormat.Mode.QUADS)
             .withBlend(BlendFunction.TRANSLUCENT)
             .withCull(false)
             .buildSnippet();
@@ -51,7 +80,10 @@ public class CustomRenderPipelines {
     // Get a RenderPipeline from a builtin shader. Uses default hooks.
     private static RenderPipeline.Builder createBase(BuiltinShader figuraShader) {
         return switch (figuraShader) {
-            case BASIC -> withHooks(RenderPipeline.builder(BASIC_SNIPPET).withLocation(FiguraClient.locate("pipeline/figura_basic")), Map.of()); // Default hooks
+            case ALBEDO -> withHooks(RenderPipeline.builder(ALBEDO_SNIPPET).withLocation(FiguraClient.locate("pipeline/figura_albedo")), Map.of());
+            case ALBEDO_NORMAL -> withHooks(RenderPipeline.builder(ALBEDO_NORMAL_SNIPPET).withLocation(FiguraClient.locate("pipeline/figura_albedo_normal")), Map.of());
+            case ALBEDO_SPECULAR -> withHooks(RenderPipeline.builder(ALBEDO_SPECULAR_SNIPPET).withLocation(FiguraClient.locate("pipeline/figura_albedo_specular")), Map.of());
+            case ALBEDO_NORMAL_SPECULAR -> withHooks(RenderPipeline.builder(ALBEDO_NORMAL_SPECULAR_SNIPPET).withLocation(FiguraClient.locate("pipeline/figura_albedo_normal_specular")), Map.of()); // Default hooks
             default -> throw new UnsupportedOperationException("TODO");
         };
     }

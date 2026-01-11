@@ -33,12 +33,11 @@ public record FiguraPartSubmit(
         // Render the avatar:
         if (partRenderer != null) {
             avatar.use(avatar -> avatar.tryRenderModelPart(() -> {
-                FiguraTransformStack stack = new FiguraTransformStack();
-                stack.peekPosition().set(pose.pose());
-                stack.peekNormal().set(pose.normal());
-                stack.multiply(rootMatrix);
+                // Current drawing pose times the root matrix we were created with
+                Matrix4f transform = new Matrix4f().set(pose.pose());
+                transform.mul(rootMatrix);
                 MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
-                partRenderer.render(bufferSource, stack, light, overlay);
+                partRenderer.render(bufferSource, transform, light, overlay);
             }));
         }
 

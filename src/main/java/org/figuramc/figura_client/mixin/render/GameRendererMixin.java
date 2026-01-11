@@ -33,6 +33,7 @@ import org.figuramc.figura_core.script_hooks.callback.items.WorldView;
 import org.figuramc.figura_core.script_hooks.timing.ProfilingCategory;
 import org.figuramc.figura_core.util.data_structures.FiguraTransformStack;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.system.MemoryStack;
@@ -142,11 +143,8 @@ public class GameRendererMixin {
                 avatar.tryRenderModelPart(() -> {
                     FiguraClientPartRenderer renderer = (FiguraClientPartRenderer) hudRoot.root.getRenderer();
                     MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
-                    FiguraTransformStack stack = new FiguraTransformStack();
-                    stack.light(new Vector2f(1f, 1f));
-                    stack.scale(-1.0f, -1.0f, 1.0f); // Flip X and Y axis
-//                        float tickDelta = deltaTracker.getGameTimeDeltaPartialTick(false);
-                    renderer.render(bufferSource, stack, LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
+                    // Flip the X and Y axis and render with full bright
+                    renderer.render(bufferSource, new Matrix4f().scale(-1.0f, -1.0f, 1.0f), LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
                     bufferSource.endBatch(); // Ensure we end the batch
                 });
             });
