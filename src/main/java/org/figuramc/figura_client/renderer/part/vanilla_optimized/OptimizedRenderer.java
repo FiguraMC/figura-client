@@ -31,6 +31,7 @@ import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
+import org.joml.Vector4i;
 import org.lwjgl.opengl.GL46;
 
 import java.nio.ByteBuffer;
@@ -199,6 +200,12 @@ public class OptimizedRenderer extends FiguraClientPartRenderer {
 
                 // TODO: Add workaround for if SSBO isn't supported (or we're somehow not using OpenGL backend?)
                 GL46.glBindBufferBase(GL46.GL_SHADER_STORAGE_BUFFER, 0, ((GlBuffer) state.transformsBuffer).handle);
+
+                // Scissor state
+                if (drawCall.base.drawCallInfo().scissors().isActive()) {
+                    Vector4i scissorState = drawCall.base.drawCallInfo().scissors().get(new Vector4i());
+                    pass.enableScissor(scissorState.x, scissorState.y, scissorState.z, scissorState.w);
+                }
 
                 // Draw! (Base vertex, Base index, Index Count, Instance Count)
                 pass.drawIndexed(0, 0, indexCount, 1);
