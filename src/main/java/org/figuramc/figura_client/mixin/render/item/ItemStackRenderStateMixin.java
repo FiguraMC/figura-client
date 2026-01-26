@@ -25,7 +25,7 @@ public class ItemStackRenderStateMixin implements ItemStackRenderStateAccess {
     public void onSubmit(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, int light, int overlay, int k, CallbackInfo ci) {
         if (partSubmit != null) {
             // Fill in light/overlay values before submitting
-            partSubmit = new FiguraPartSubmit(partSubmit.avatar(), partSubmit.partRenderer(), partSubmit.rootMatrix(), light, overlay);
+            partSubmit = new FiguraPartSubmit(partSubmit.avatar(), partSubmit.modelPart(), partSubmit.rootMatrix(), light, overlay);
             submitNodeCollector.submitCustomGeometry(poseStack, FiguraPartSubmit.DUMMY_RENDER_TYPE, partSubmit);
             ci.cancel();
         }

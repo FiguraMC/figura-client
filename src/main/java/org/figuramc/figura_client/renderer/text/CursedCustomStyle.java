@@ -1,4 +1,4 @@
-package org.figuramc.figura_client.renderer.part.text_rendering;
+package org.figuramc.figura_client.renderer.text;
 
 import net.minecraft.network.chat.*;
 import org.jetbrains.annotations.Nullable;

@@ -23,12 +23,15 @@ import org.figuramc.figura_core.script_hooks.callback.items.CallbackView;
 import org.figuramc.figura_core.script_hooks.timing.AvatarTimeTracker;
 import org.figuramc.figura_core.script_hooks.timing.ProfilingCategory;
 import org.figuramc.figura_core.util.data_structures.NullEmptyStack;
+import org.figuramc.figura_core.util.functional.ThrowingRunnable;
+import org.figuramc.figura_core.util.functional.ThrowingSupplier;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.function.Supplier;
 
 public class RenderUtils {
 
@@ -71,16 +74,35 @@ public class RenderUtils {
         return loc;
     });
 
-    // Run tasks on the render thread
+    // Run tasks on the render thread.
+    // Errors will complete the CompletableFuture exceptionally,
+    // but you shouldn't throw errors here if you can avoid it.
     public static final Queue<Runnable> TASKS = new ConcurrentLinkedDeque<>();
     public static CompletableFuture<Void> runOnRenderThread(Runnable task) {
         CompletableFuture<Void> future = new CompletableFuture<>();
         TASKS.add(() -> {
-            task.run();
-            future.complete(null);
+            try {
+                task.run();
+                future.complete(null);
+            } catch (Throwable anyError) {
+                future.completeExceptionally(anyError);
+            }
         });
         return future;
     }
+    // Anything thrown by the Supplier will complete the future exceptionally
+    public static <T> CompletableFuture<T> makeOnRenderThread(Supplier<T> task) {
+        CompletableFuture<T> future = new CompletableFuture<>();
+        TASKS.add(() -> {
+            try {
+                future.complete(task.get());
+            } catch (Throwable anyError) {
+                future.completeExceptionally(anyError);
+            }
+        });
+        return future;
+    }
+
 
     // Running rendering events, a couple mixins use this
     public static <Args extends CallbackItem> @Nullable FiguraCallbackSubmit invokeRenderEvent(Avatar<?> avatar, ProfilingCategory category, ProfilingCategory callbacksCategory, Event<Args, CallbackItem.Tuple2<CallbackItem.Optional<CallbackView<CallbackItem, CallbackItem.Unit>>, CallbackItem>> renderEvent, Args args) {
@@ -89,15 +111,15 @@ public class RenderUtils {
         var eventListener = events.getEventListener(renderEvent);
 
         // Invoke the event and get some render-thread callbacks
-        // Give this 5 milliseconds to run by default (TODO: configurable)
-        var callbacks = AvatarTimeTracker.getInstance().runTimedFor(avatar, category, 5_000_000L, () -> eventListener.invokeToList(args));
+        // Give this 1 second to run by default (TODO: configurable)
+        var callbacks = AvatarTimeTracker.getInstance().runTimedFor(avatar, category, 1_000_000_000L, () -> eventListener.invokeToList(args));
 
         if (callbacks == null || callbacks.isEmpty()) return null;
         AvatarView<?> view = new AvatarView<>(avatar);
         return () -> view.use(renderThreadAvatar -> {
             // Run all the callbacks for this avatar.
-            // Give this 5 milliseconds to run by default (TODO: configurable)
-            AvatarTimeTracker.getInstance().runTimed(renderThreadAvatar, callbacksCategory, 5_000_000L, () -> {
+            // Give this 1 second to run by default (TODO: configurable)
+            AvatarTimeTracker.getInstance().runTimed(renderThreadAvatar, callbacksCategory, 1_000_000_000L, () -> {
                 for (var callback : callbacks) {
                     var funcView = callback.a().value();
                     if (funcView == null) continue;

@@ -28,17 +28,17 @@ public class MinecraftMixin {
             if (events == null) return;
 
             // Always invoke CLIENT_TICK:
-            // 20 millisecond limit by default, TODO configurable
+            // 1 second limit by default, TODO configurable
             var eventListener1 = events.getEventListener(Event.CLIENT_TICK);
-            AvatarTimeTracker.getInstance().runTimed(avatar, ProfilingCategory.CLIENT_TICK_EVENT, 20_000_000L, () -> eventListener1.invoke(CallbackItem.Unit.INSTANCE));
+            AvatarTimeTracker.getInstance().runTimed(avatar, ProfilingCategory.CLIENT_TICK_EVENT, 1_000_000_000L, () -> eventListener1.invoke(CallbackItem.Unit.INSTANCE));
 
             // Invoke WORLD_TICK if the world is non-null:
             ClientLevel level = Minecraft.getInstance().level;
             if (level != null) {
                 try (WorldView<MinecraftWorldImpl> worldView = new WorldView<>(new MinecraftWorldImpl(level))) {
-                    // 20 ms limit by default, TODO configurable
+                    // 1 second limit by default, TODO configurable
                     var eventListener2 = events.getEventListener(Event.WORLD_TICK);
-                    AvatarTimeTracker.getInstance().runTimed(avatar, ProfilingCategory.WORLD_TICK_EVENT, 20_000_000L, () -> eventListener2.invoke(worldView));
+                    AvatarTimeTracker.getInstance().runTimed(avatar, ProfilingCategory.WORLD_TICK_EVENT, 1_000_000_000L, () -> eventListener2.invoke(worldView));
                 }
             }
         });

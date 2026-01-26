@@ -1,4 +1,4 @@
-package org.figuramc.figura_client.renderer.part.text_rendering;
+package org.figuramc.figura_client.renderer.text;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -13,7 +13,6 @@ import net.minecraft.util.ARGB;
 import net.minecraft.util.Mth;
 import org.figuramc.figura_core.text.FormattedText;
 import org.figuramc.figura_core.text.TextStyle;
-import org.figuramc.figura_core.util.data_structures.FiguraTransformStack;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
@@ -22,6 +21,8 @@ import java.util.ArrayList;
 
 /**
  * Class containing logic for rendering text.
+ * TODO rewrite this to use more figura-like rendering code instead of deferring to MC,
+ *      letting us use custom shaders and stuff
  */
 public class FiguraTextRenderer {
 

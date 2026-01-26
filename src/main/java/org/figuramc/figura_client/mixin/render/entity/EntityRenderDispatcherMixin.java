@@ -21,7 +21,6 @@ import net.minecraft.world.entity.Pose;
 import org.figuramc.figura_client.ducks.EntityRenderStateAccess;
 import org.figuramc.figura_client.game_data.MinecraftEntityImpl;
 import org.figuramc.figura_client.game_data.MinecraftWorldImpl;
-import org.figuramc.figura_client.renderer.part.FiguraClientPartRenderer;
 import org.figuramc.figura_client.renderer.submit.FiguraCallbackSubmit;
 import org.figuramc.figura_client.renderer.submit.FiguraPartSubmit;
 import org.figuramc.figura_client.util.RenderUtils;
@@ -110,13 +109,7 @@ public abstract class EntityRenderDispatcherMixin {
                 overlay = LivingEntityRenderer.getOverlayCoords(livingEntityRenderState, livingEntityRenderer.getWhiteOverlayProgress(livingEntityRenderState));
 
             // Finally create the submission.
-            access.figura_client$setPartSubmit(new FiguraPartSubmit(
-                    view,
-                    (FiguraClientPartRenderer) root.root.getRenderer(),
-                    rootMatrix,
-                    entityRenderState.lightCoords,
-                    overlay
-            ));
+            access.figura_client$setPartSubmit(new FiguraPartSubmit(view, root.root, rootMatrix, entityRenderState.lightCoords, overlay));
         });
         // Return original
         return entityRenderState;

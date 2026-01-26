@@ -22,6 +22,10 @@
     "render.model.ModelFeatureRendererMixin",
     "render.model.ModelPartMixin",
     "render.model.ModelSubmitMixin",
+    "render.text.PreparedTextBuilderMixin",
     "tick.ClientLevelMixin"
+  ],
+  "mixins": [
+    "render.text.StyleMixin"
   ]
 }

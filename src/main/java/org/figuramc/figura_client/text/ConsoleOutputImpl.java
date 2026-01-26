@@ -16,6 +16,7 @@ import net.minecraft.util.parsing.packrat.commands.CommandArgumentParser;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import org.figuramc.figura_client.FiguraClient;
+import org.figuramc.figura_client.ducks.StyleAccess;
 import org.figuramc.figura_core.minecraft_interop.ClientTranslatables;
 import org.figuramc.figura_core.minecraft_interop.ConsoleOutput;
 import org.figuramc.figura_core.text.FormattedText;
@@ -51,8 +52,14 @@ public class ConsoleOutputImpl implements ConsoleOutput {
 
     @Override
     public void logFormatted(FormattedText text) {
-        // TODO
-        throw new AssertionError("Not implemented");
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player != null) {
+            MutableComponent component = Component.literal(new String(text.codepoints, 0, text.codepoints.length));
+            Style figuraStyle = new Style(null, null, null, null, null, null, null, null, null, null, null);
+            ((StyleAccess) figuraStyle).figura_client$setFiguraStyle(text.style);
+            component.withStyle(figuraStyle);
+            Minecraft.getInstance().execute(() -> player.displayClientMessage(component, false));
+        }
     }
 
     /**
@@ -132,6 +139,7 @@ public class ConsoleOutputImpl implements ConsoleOutput {
                         ))
                 ));
         }
+
         return text;
     }
 

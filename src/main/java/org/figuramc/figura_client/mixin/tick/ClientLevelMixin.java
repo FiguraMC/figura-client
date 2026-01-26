@@ -48,10 +48,10 @@ public class ClientLevelMixin {
             ) {
                 @Nullable AvatarEvents events = avatar.getComponent(AvatarEvents.TYPE);
                 if (events == null) return;
-                // 20 ms limit default, TODO configurable
+                // 1 second limit default, TODO configurable
                 var eventListener = events.getEventListener(Event.ENTITY_TICK);
                 CallbackItem.Tuple2<EntityView<?>, WorldView<?>> args = new CallbackItem.Tuple2<>(entityView, worldView);
-                AvatarTimeTracker.getInstance().runTimed(avatar, ProfilingCategory.ENTITY_TICK_EVENT, 20_000_000L, () -> eventListener.invoke(args));
+                AvatarTimeTracker.getInstance().runTimed(avatar, ProfilingCategory.ENTITY_TICK_EVENT, 1_000_000_000L, () -> eventListener.invoke(args));
             }
         });
     }

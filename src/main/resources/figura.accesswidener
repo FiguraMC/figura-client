@@ -16,6 +16,7 @@ accessible field net/minecraft/client/renderer/entity/layers/CapeLayer model Lne
 accessible field net/minecraft/client/model/player/PlayerCapeModel cape Lnet/minecraft/client/model/geom/ModelPart;
 
 # Text rendering
+accessible class net/minecraft/client/gui/Font$PreparedTextBuilder
 extendable class net/minecraft/network/chat/Style
 accessible method net/minecraft/network/chat/Style <init> (Lnet/minecraft/network/chat/TextColor;Ljava/lang/Integer;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Lnet/minecraft/network/chat/ClickEvent;Lnet/minecraft/network/chat/HoverEvent;Ljava/lang/String;Lnet/minecraft/network/chat/FontDescription;)V
 accessible method net/minecraft/client/gui/Font getGlyphSource (Lnet/minecraft/network/chat/FontDescription;)Lnet/minecraft/client/gui/GlyphSource;

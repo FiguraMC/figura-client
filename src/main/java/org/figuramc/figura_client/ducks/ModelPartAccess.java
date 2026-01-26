@@ -11,8 +11,14 @@ public interface ModelPartAccess {
     @Nullable VanillaPart figura_client$getVanillaPart();
     void figura_client$setVanillaPart(@Nullable VanillaPart part);
 
-    // Get/set new "position" variable for the transform (added by Figura)
-    Vector3f figura_client$getPosition();
+    // Enable/disable figura modifications to the model part
+    void figura_client$setEnabled(boolean figuraEnabled);
 
+    // Get/set figura variables
+    void figura_client$setVisible(boolean figuraVisible);
+    Vector3f figura_client$getOrigin();
+    Vector3f figura_client$getRotation();
+    Vector3f figura_client$getScale();
+    Vector3f figura_client$getPosition();
 
 }

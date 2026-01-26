@@ -12,15 +12,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.CachedOrthoProjectionMatrixBuffer;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.state.LevelRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Util;
 import net.minecraft.world.entity.Entity;
 import org.figuramc.figura_client.ducks.LevelRenderStateAccess;
 import org.figuramc.figura_client.game_data.MinecraftWorldImpl;
-import org.figuramc.figura_client.renderer.part.FiguraClientPartRenderer;
+import org.figuramc.figura_client.renderer.part.ClientRendererState;
 import org.figuramc.figura_client.renderer.submit.FiguraCallbackSubmit;
 import org.figuramc.figura_client.util.RenderUtils;
 import org.figuramc.figura_core.avatars.components.HudRoot;
@@ -141,11 +139,14 @@ public class GameRendererMixin {
                 HudRoot hudRoot = avatar.getComponent(HudRoot.TYPE);
                 if (hudRoot == null) return;
                 avatar.tryRenderModelPart(() -> {
-                    FiguraClientPartRenderer renderer = (FiguraClientPartRenderer) hudRoot.root.getRenderer();
-                    MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
-                    // Flip the X and Y axis and render with full bright
-                    renderer.render(bufferSource, new Matrix4f().scale(-1.0f, -1.0f, 1.0f), LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY);
-                    bufferSource.endBatch(); // Ensure we end the batch
+                    // Render with fullbright
+                    FiguraTransformStack transformStack = new FiguraTransformStack();
+                    transformStack.light(new Vector2f(1.0f));
+                    hudRoot.root.render(transformStack, new ClientRendererState(
+                            // Flip X/Y axes
+                            new Matrix4f().scale(-1.0f, -1.0f, 1.0f),
+                            OverlayTexture.NO_OVERLAY
+                    ));
                 });
             });
         }

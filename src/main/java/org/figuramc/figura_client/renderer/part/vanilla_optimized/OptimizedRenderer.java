@@ -12,21 +12,17 @@ import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
-import org.figuramc.figura_client.renderer.part.FiguraClientPartRenderer;
-import org.figuramc.figura_client.renderer.part.text_rendering.FiguraTextRenderer;
+import org.figuramc.figura_client.renderer.part.ClientRendererState;
 import org.figuramc.figura_client.util.RenderUtils;
-import org.figuramc.figura_core.avatars.errors.AvatarError;
 import org.figuramc.figura_core.avatars.errors.AvatarOutOfMemoryError;
+import org.figuramc.figura_core.minecraft_interop.render.ClientPartRenderer;
 import org.figuramc.figura_core.minecraft_interop.texture.MinecraftTexture;
-import org.figuramc.figura_core.model.part.tasks.TextTask;
 import org.figuramc.figura_core.model.rendering.PartDataStruct;
-import org.figuramc.figura_core.model.rendering.RenderingRoot;
+import org.figuramc.figura_core.model.rendering.RenderData;
 import org.figuramc.figura_core.model.rendering.vertex.FiguraVertexFormat;
 import org.figuramc.figura_core.util.data_structures.FiguraTransformStack;
 import org.figuramc.figura_core.util.data_structures.Pair;
-import org.figuramc.figura_core.util.exception.FiguraException;
+import org.figuramc.memory_tracker.AllocationTracker;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
@@ -36,8 +32,9 @@ import org.lwjgl.opengl.GL46;
 
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
-public class OptimizedRenderer extends FiguraClientPartRenderer {
+public class OptimizedRenderer implements ClientPartRenderer {
 
     private static final int FIGURA_UNIFORMS_SIZE = new Std140SizeCalculator()
             .putMat4f().putMat4f() // Matrices
@@ -48,15 +45,14 @@ public class OptimizedRenderer extends FiguraClientPartRenderer {
             .align(RenderSystem.getDevice().getUniformOffsetAlignment()) // Align by impl-dependent offset alignment
             .get();
 
-    private @Nullable State state;
+    // RenderData known
+    private final RenderData renderData;
 
-    public OptimizedRenderer(RenderingRoot<?> root) {
-        super(root);
-    }
-
-    private record State(
+    // Graphics items, created on render thread, so they're in a CompletableFuture
+    private final CompletableFuture<GraphicsItems> graphicsItems;
+    private record GraphicsItems(
             GpuBuffer transformsBuffer,
-            GpuBuffer figuraUniformsBuffer,
+            GpuBuffer figuraUniformsBuffer, // One uniform buffer, with many subbuffers, one for each draw call
             List<DrawCallState> drawCallStates
     ) implements AutoCloseable {
         @Override
@@ -67,7 +63,7 @@ public class OptimizedRenderer extends FiguraClientPartRenderer {
         }
     }
     private record DrawCallState(
-            RenderingRoot.DrawCall base,
+            RenderData.DrawCall base,
             RenderPipeline pipeline,
             GpuBuffer vertexBuffer
     ) implements AutoCloseable {
@@ -77,26 +73,21 @@ public class OptimizedRenderer extends FiguraClientPartRenderer {
         }
     }
 
-    // Re-create the state if it was lost
-    private void rebuild() throws AvatarError {
-        assert state == null;
-        try {
-            root.rebuildVertices();
-        } catch (AvatarOutOfMemoryError avatarOOM) {
-            throw new AvatarError(FiguraException.INTERNAL_ERROR, "TODO: OOM Errors");
-        }
-        if (!root.builtVertexData.isEmpty()) {
+    // Constructor just creates the graphics state
+    // TODO: Track memory. Make sure the allocation error isn't thrown on the render thread, this will be hard to recover from.
+    public OptimizedRenderer(RenderData renderData, @Nullable AllocationTracker<AvatarOutOfMemoryError> allocationTracker) {
+        this.renderData = renderData;
+        // Make graphics items on render thread
+        graphicsItems = RenderUtils.makeOnRenderThread(() -> {
             // Set up shared buffers
-            GpuBuffer transformsBuffer = RenderSystem.getDevice().createBuffer(
-                    () -> "Figura Transforms Buffer", GpuBuffer.USAGE_MAP_WRITE, (long) root.transformCount * PartDataStruct.GPU_SIZE);
-            GpuBuffer figuraUniformsBuffer = RenderSystem.getDevice().createBuffer(
-                    () -> "Figura Uniforms Buffer", GpuBuffer.USAGE_MAP_WRITE, (long) this.root.drawCalls.size() * FIGURA_UNIFORMS_SIZE); // Separate buffer range for each draw call
+            GpuBuffer transformsBuffer = RenderSystem.getDevice().createBuffer(() -> "Figura Transforms Buffer", GpuBuffer.USAGE_MAP_WRITE, (long) renderData.partData.length * PartDataStruct.GPU_SIZE);
+            GpuBuffer figuraUniformsBuffer = RenderSystem.getDevice().createBuffer(() -> "Figura Uniforms Buffer", GpuBuffer.USAGE_MAP_WRITE, (long) renderData.drawCalls.size() * FIGURA_UNIFORMS_SIZE); // Separate buffer range for each draw call
             // Generate draw call states
-            List<DrawCallState> drawCallStates = new ArrayList<>();
+            List<DrawCallState> drawCallStates = new ArrayList<>(renderData.drawCalls.size());
             // Cache VBOs
             Map<Pair<FiguraVertexFormat, Integer>, GpuBuffer> vertexBuffers = new HashMap<>();
             // Create draw call infos
-            for (RenderingRoot.DrawCall drawCall : this.root.drawCalls) {
+            for (RenderData.DrawCall drawCall : renderData.drawCalls) {
                 // Render pipeline
                 RenderPipeline pipeline = CustomRenderPipelines.create(drawCall.drawCallInfo().shader());
                 // Vertex buffer
@@ -105,53 +96,42 @@ public class OptimizedRenderer extends FiguraClientPartRenderer {
                 GpuBuffer vertexBuffer = vertexBuffers.computeIfAbsent(formatKey, k -> RenderSystem.getDevice().createBuffer(
                         () -> "Figura Vertex Buffer",
                         GpuBuffer.USAGE_VERTEX,
-                        root.builtVertexData.get(vertexFormat).slice(drawCall.start(), drawCall.length())
+                        renderData.builtData.get(vertexFormat).slice(drawCall.start(), drawCall.length())
                 ));
                 drawCallStates.add(new DrawCallState(drawCall, pipeline, vertexBuffer));
             }
-
-            state = new State(transformsBuffer, figuraUniformsBuffer, drawCallStates);
-        }
+            // Return
+            return new GraphicsItems(transformsBuffer, figuraUniformsBuffer, drawCallStates);
+        });
     }
 
+
+
+    // Draw a given RenderData with the given transform and other context
     @Override
-    public void render(MultiBufferSource bufferSource, Matrix4f transform, int light, int overlay) throws AvatarError {
-        // Ensure we have valid state before moving on
-        if (state == null) rebuild();
-        if (state == null) return;
-        // Compute transforms
-        FiguraTransformStack newStack = new FiguraTransformStack();
-        newStack.light(new Vector2f(LightTexture.block(light) / 15.0f, LightTexture.sky(light) / 15.0f)); // Set up initial light value
-        root.extractTransforms(newStack, (renderTask, matrixStack) -> {
-            // Code to handle render tasks. Just draw them as we encounter them.
-            matrixStack.push();
-            // Apply initial transforms from outside, since we're handing this to minecraft-y text rendering...
-            // Minecraft rendering expects its inputs in world space, but the matrixStack is currently in model space.
-            // TODO: How feasible is it to change this? Do we care?
-            matrixStack.peekPosition().mulLocal(transform);
-            switch (renderTask) {
-                case TextTask textTask -> FiguraTextRenderer.render(textTask.formattedText, bufferSource, matrixStack.peekPosition(), light, overlay);
-            }
-            matrixStack.pop();
-        });
+    public void draw(FiguraTransformStack transform, Object unknownState) {
+        // Ensure state is the appropriate type
+        if (!(unknownState instanceof ClientRendererState(Matrix4f rootAndViewMatrix, int overlay))) throw new IllegalArgumentException("State object expected to be ClientRendererState");
+        // Fetch graphics items, if they're somehow not ready yet then let's just skip
+        if (!(graphicsItems.getNow(null) instanceof GraphicsItems(GpuBuffer transformsBuffer, GpuBuffer figuraUniformsBuffer, List<DrawCallState> drawCallStates))) return;
+
         // Map the transforms buffer and put data inside
         CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
-        try (var transformsView = encoder.mapBuffer(state.transformsBuffer, false, true)) {
+        try (var transformsView = encoder.mapBuffer(transformsBuffer, false, true)) {
             ByteBuffer buf = transformsView.data();
-            for (int i = 0; i < root.transformCount; i++)
-                root.transforms[i].write(buf, i * PartDataStruct.GPU_SIZE);
+            for (int i = 0; i < renderData.partData.length; i++)
+                renderData.partData[i].write(buf, i * PartDataStruct.GPU_SIZE);
         }
 
         // Loop over draw calls
+        for (int drawIndex = 0; drawIndex < drawCallStates.size(); drawIndex++) {
+            DrawCallState drawCall = drawCallStates.get(drawIndex);
 
-        for (int drawIndex = 0; drawIndex < state.drawCallStates.size(); drawIndex++) {
-            DrawCallState drawCall = state.drawCallStates.get(drawIndex);
-
-            // Figura uniforms
-            GpuBufferSlice uniformsBufferSlice = state.figuraUniformsBuffer.slice((long) drawIndex * FIGURA_UNIFORMS_SIZE, FIGURA_UNIFORMS_SIZE);
+            // Set up Figura uniforms
+            GpuBufferSlice uniformsBufferSlice = figuraUniformsBuffer.slice((long) drawIndex * FIGURA_UNIFORMS_SIZE, FIGURA_UNIFORMS_SIZE);
             try (var figuraUniformsView = encoder.mapBuffer(uniformsBufferSlice, false, true)) {
                 ByteBuffer buf = figuraUniformsView.data();
-                transform.get(0, buf); // CamRelWorldMat
+                rootAndViewMatrix.get(0, buf); // CamRelWorldMat
                 RenderSystem.getModelViewMatrix().get(64, buf); // ViewMat
                 // Calculate overlay color... :P
                 if (overlay >> 16 < 8) {
@@ -198,8 +178,8 @@ public class OptimizedRenderer extends FiguraClientPartRenderer {
                     pass.bindTexture(name, gpuTextureView, RenderSystem.getSamplerCache().getRepeat(filterMode));
                 }
 
-                // TODO: Add workaround for if SSBO isn't supported (or we're somehow not using OpenGL backend?)
-                GL46.glBindBufferBase(GL46.GL_SHADER_STORAGE_BUFFER, 0, ((GlBuffer) state.transformsBuffer).handle);
+                // TODO: Add a workaround for if SSBO isn't supported (or we're somehow not using OpenGL backend?)
+                GL46.glBindBufferBase(GL46.GL_SHADER_STORAGE_BUFFER, 0, ((GlBuffer) transformsBuffer).handle);
 
                 // Scissor state
                 if (drawCall.base.drawCallInfo().scissors().isActive()) {
@@ -214,15 +194,8 @@ public class OptimizedRenderer extends FiguraClientPartRenderer {
     }
 
     @Override
-    public void invalidate() {
-        if (this.state != null) {
-            this.state.close();
-            this.state = null;
-        }
-    }
-
-    @Override
-    public void destroy() {
-        invalidate();
+    public void close() {
+        // Close the items when done.
+        graphicsItems.thenAccept(GraphicsItems::close);
     }
 }

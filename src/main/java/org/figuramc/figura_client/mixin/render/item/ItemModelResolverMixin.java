@@ -3,7 +3,6 @@ package org.figuramc.figura_client.mixin.render.item;
 import net.minecraft.client.renderer.block.model.ItemTransform;
 import net.minecraft.client.renderer.item.ItemModelResolver;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.ItemOwner;
@@ -14,7 +13,6 @@ import org.figuramc.figura_client.FiguraClient;
 import org.figuramc.figura_client.ducks.ItemStackRenderStateAccess;
 import org.figuramc.figura_client.game_data.MinecraftEntityImpl;
 import org.figuramc.figura_client.game_data.MinecraftItemStackImpl;
-import org.figuramc.figura_client.renderer.part.FiguraClientPartRenderer;
 import org.figuramc.figura_client.renderer.submit.FiguraPartSubmit;
 import org.figuramc.figura_core.avatars.components.CustomItems;
 import org.figuramc.figura_core.manage.AvatarManagers;
@@ -22,7 +20,6 @@ import org.figuramc.figura_core.manage.AvatarView;
 import org.figuramc.figura_core.minecraft_interop.ItemRenderContext;
 import org.figuramc.figura_core.model.part.parts.CustomItemModelPart;
 import org.figuramc.figura_core.model.part.parts.FiguraModelPart;
-import org.figuramc.figura_core.model.rendering.RenderingRoot;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.spongepowered.asm.mixin.Mixin;
@@ -58,12 +55,12 @@ public class ItemModelResolverMixin {
             if (customItems == null) return;
 
             ItemRenderContext renderContext = FiguraClient.RENDER_CONTEXTS.get(itemDisplayContext);
-            RenderingRoot<?> renderer = customItems.getModelPart(new MinecraftItemStackImpl(itemStack), renderContext);
-            if (renderer == null) return;
+            FiguraModelPart modelPart = customItems.getModelPart(new MinecraftItemStackImpl(itemStack), renderContext);
+            if (modelPart == null) return;
 
             // Figure out the transforms, store in root matrix
             Matrix4f rootMatrix = new Matrix4f();
-            if (renderer.rootPart instanceof CustomItemModelPart customModel && customModel.itemTransforms.get(renderContext) instanceof Matrix4f customTransform) {
+            if (modelPart instanceof CustomItemModelPart customModel && customModel.itemTransforms.get(renderContext) instanceof Matrix4f customTransform) {
                 // We have a custom transform; apply it
                 rootMatrix.mul(customTransform);
             } else {
@@ -74,13 +71,7 @@ public class ItemModelResolverMixin {
 
             // Light and overlay are set at submission time apparently?
             // This might change, but we'll edit this later on actual submission :P
-            access.figura_client$setPartSubmit(new FiguraPartSubmit(
-                    view,
-                    (FiguraClientPartRenderer) renderer.getRenderer(),
-                    rootMatrix,
-                    -1,
-                    -1
-            ));
+            access.figura_client$setPartSubmit(new FiguraPartSubmit(view, modelPart, rootMatrix, -1, -1));
         });
     }
 

@@ -65,20 +65,20 @@ public class CustomVertexFormat extends VertexFormat {
         for (int i = 0; i < figuraVertexFormat.elements.length; i++) {
             FiguraVertexElem figuraElem = figuraVertexFormat.elements[i];
             // Type used to represent it in the vertex buffer
-            VertexFormatElement.Type type = switch (figuraElem.kind) {
+            VertexFormatElement.Type type = switch (figuraElem.type) {
                 case FLOAT32, FLOAT32_2, FLOAT32_3, FLOAT32_4 -> VertexFormatElement.Type.FLOAT;
                 case UFLOAT8, UFLOAT8_2, UFLOAT8_3, UFLOAT8_4 -> VertexFormatElement.Type.UBYTE;
                 case SFLOAT8, SFLOAT8_2, SFLOAT8_3, SFLOAT8_4 -> VertexFormatElement.Type.BYTE;
                 case UINT16, UINT16_2, UINT16_3, UINT16_4 -> VertexFormatElement.Type.USHORT;
             };
             // "Normal" to normalize, "Generic" to not normalize
-            VertexFormatElement.Usage usage = switch (figuraElem.kind) {
+            VertexFormatElement.Usage usage = switch (figuraElem.type) {
                 case FLOAT32, FLOAT32_2, FLOAT32_3, FLOAT32_4 -> VertexFormatElement.Usage.GENERIC;
                 case UFLOAT8, UFLOAT8_2, UFLOAT8_3, UFLOAT8_4 -> VertexFormatElement.Usage.NORMAL;
                 case SFLOAT8, SFLOAT8_2, SFLOAT8_3, SFLOAT8_4 -> VertexFormatElement.Usage.NORMAL;
                 case UINT16, UINT16_2, UINT16_3, UINT16_4 -> VertexFormatElement.Usage.GENERIC;
             };
-            out.add(new VertexFormatElement(30, 0, type, usage, figuraElem.kind.count));
+            out.add(new VertexFormatElement(30, 0, type, usage, figuraElem.type.count));
         }
         return out;
     }
