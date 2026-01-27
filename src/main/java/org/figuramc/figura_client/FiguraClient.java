@@ -12,6 +12,7 @@ import org.figuramc.figura_client.game_data.GameDataProviderImpl;
 import org.figuramc.figura_client.game_data.MinecraftEntityImpl;
 import org.figuramc.figura_client.renderer.part.vanilla_optimized.OptimizedRenderer;
 import org.figuramc.figura_client.text.ConsoleOutputImpl;
+import org.figuramc.figura_client.text.GlyphProviderImpl;
 import org.figuramc.figura_client.textures.TextureProviderImpl;
 import org.figuramc.figura_core.avatars.AvatarModules;
 import org.figuramc.figura_core.avatars.AvatarTemplates;
@@ -74,6 +75,7 @@ public class FiguraClient implements ClientModInitializer {
 	public void onInitializeClient() {
 		// Initialize Figura connection point
 		FiguraConnectionPoint.TEXTURE_PROVIDER = new TextureProviderImpl();
+		FiguraConnectionPoint.GLYPH_PROVIDER = new GlyphProviderImpl();
 		FiguraConnectionPoint.PART_RENDERER_FACTORY = OptimizedRenderer::new;
 		FiguraConnectionPoint.GAME_DATA_PROVIDER = new GameDataProviderImpl();
 		FiguraConnectionPoint.CONSOLE_OUTPUT = new ConsoleOutputImpl();

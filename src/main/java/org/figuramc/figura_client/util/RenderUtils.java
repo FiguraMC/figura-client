@@ -1,7 +1,6 @@
 package org.figuramc.figura_client.util;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -23,8 +22,6 @@ import org.figuramc.figura_core.script_hooks.callback.items.CallbackView;
 import org.figuramc.figura_core.script_hooks.timing.AvatarTimeTracker;
 import org.figuramc.figura_core.script_hooks.timing.ProfilingCategory;
 import org.figuramc.figura_core.util.data_structures.NullEmptyStack;
-import org.figuramc.figura_core.util.functional.ThrowingRunnable;
-import org.figuramc.figura_core.util.functional.ThrowingSupplier;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 
@@ -43,7 +40,7 @@ public class RenderUtils {
     @Contract("null -> null;!null -> !null")
     public static GpuTextureView texToGpuTextureView(@Nullable MinecraftTexture texture) {
         return switch (texture) {
-            case StandaloneMinecraftTextureImpl impl -> impl.textureView;
+            case StandaloneMinecraftTextureImpl impl -> impl.textureView();
             case AtlasedMinecraftTextureImpl impl -> impl.atlas.getTextureView();
             case OwnedMinecraftTextureImpl ownedImpl -> ownedImpl.getTextureView();
             case null -> null;

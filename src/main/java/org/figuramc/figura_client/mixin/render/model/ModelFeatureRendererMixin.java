@@ -94,8 +94,6 @@ public class ModelFeatureRendererMixin {
                 else access.figura_client$getOrigin().set(vanillaPart.x, vanillaPart.y, vanillaPart.z);
                 access.figura_client$getOrigin().add(temp.x * inv, temp.y * inv, temp.z);
 
-                if (!scriptPart.cancelVanillaOrigin) ;
-
                 // Rotation
                 scriptPart.storedRotation.set((vanillaPart.xRot - initialPose.xRot()) * inv, (vanillaPart.yRot - initialPose.yRot()) * inv, vanillaPart.zRot - initialPose.zRot());
                 temp.set(scriptPart.figuraTransform.totalEulerRad());

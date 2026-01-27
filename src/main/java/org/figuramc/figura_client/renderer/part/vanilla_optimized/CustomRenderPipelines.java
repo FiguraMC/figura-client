@@ -24,6 +24,8 @@ public class CustomRenderPipelines {
     public static final CustomVertexFormat ALBEDO_SPECULAR_VERTEX_FORMAT = new CustomVertexFormat(FiguraVertexFormat.ALBEDO_SPECULAR);
     public static final CustomVertexFormat ALBEDO_NORMAL_SPECULAR_VERTEX_FORMAT = new CustomVertexFormat(FiguraVertexFormat.ALBEDO_NORMAL_SPECULAR);
 
+    public static final CustomVertexFormat TEXT_SHADER_VERTEX_FORMAT = new CustomVertexFormat(FiguraVertexFormat.TEXT_SHADER);
+
     // Base snippets without additional extensions
     private static final RenderPipeline.Snippet ALBEDO_SNIPPET = RenderPipeline.builder(RenderPipelines.MATRICES_FOG_LIGHT_DIR_SNIPPET)
             .withUniform("FiguraUniforms", UniformType.UNIFORM_BUFFER)
@@ -70,6 +72,18 @@ public class CustomRenderPipelines {
             .withCull(false)
             .buildSnippet();
 
+    private static final RenderPipeline.Snippet TEXT_SHADER_SNIPPET = RenderPipeline.builder(RenderPipelines.MATRICES_FOG_LIGHT_DIR_SNIPPET)
+            .withUniform("FiguraUniforms", UniformType.UNIFORM_BUFFER)
+            .withSampler("Albedo")
+            .withSampler("LightMap")
+            .withVertexShader(FiguraClient.locate("core/figura_text_shader"))
+            .withFragmentShader(FiguraClient.locate("core/figura_text_shader"))
+            .withVertexFormat(TEXT_SHADER_VERTEX_FORMAT, VertexFormat.Mode.QUADS)
+            .withBlend(BlendFunction.TRANSLUCENT)
+            .withCull(false)
+            .buildSnippet();
+
+
     public static RenderPipeline create(FiguraShader figuraShader) {
         return switch (figuraShader) {
             case BuiltinShader builtin -> createBase(builtin).build();
@@ -80,10 +94,12 @@ public class CustomRenderPipelines {
     // Get a RenderPipeline from a builtin shader. Uses default hooks.
     private static RenderPipeline.Builder createBase(BuiltinShader figuraShader) {
         return switch (figuraShader) {
+            // Default hooks Map.of() for all
             case ALBEDO -> withHooks(RenderPipeline.builder(ALBEDO_SNIPPET).withLocation(FiguraClient.locate("pipeline/figura_albedo")), Map.of());
             case ALBEDO_NORMAL -> withHooks(RenderPipeline.builder(ALBEDO_NORMAL_SNIPPET).withLocation(FiguraClient.locate("pipeline/figura_albedo_normal")), Map.of());
             case ALBEDO_SPECULAR -> withHooks(RenderPipeline.builder(ALBEDO_SPECULAR_SNIPPET).withLocation(FiguraClient.locate("pipeline/figura_albedo_specular")), Map.of());
-            case ALBEDO_NORMAL_SPECULAR -> withHooks(RenderPipeline.builder(ALBEDO_NORMAL_SPECULAR_SNIPPET).withLocation(FiguraClient.locate("pipeline/figura_albedo_normal_specular")), Map.of()); // Default hooks
+            case ALBEDO_NORMAL_SPECULAR -> withHooks(RenderPipeline.builder(ALBEDO_NORMAL_SPECULAR_SNIPPET).withLocation(FiguraClient.locate("pipeline/figura_albedo_normal_specular")), Map.of());
+            case TEXT_SHADER -> withHooks(RenderPipeline.builder(TEXT_SHADER_SNIPPET).withLocation(FiguraClient.locate("pipeline/figura_text_shader")), Map.of());
             default -> throw new UnsupportedOperationException("TODO");
         };
     }

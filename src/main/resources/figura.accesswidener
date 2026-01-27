@@ -23,6 +23,16 @@ accessible method net/minecraft/client/gui/Font getGlyphSource (Lnet/minecraft/n
 accessible field net/minecraft/client/gui/Font provider Lnet/minecraft/client/gui/Font$Provider;
 accessible field net/minecraft/client/gui/Font random Lnet/minecraft/util/RandomSource;
 
+accessible field net/minecraft/client/gui/font/glyphs/BakedSheetGlyph textureView Lcom/mojang/blaze3d/textures/GpuTextureView;
+accessible field net/minecraft/client/gui/font/glyphs/BakedSheetGlyph left F
+accessible field net/minecraft/client/gui/font/glyphs/BakedSheetGlyph right F
+accessible field net/minecraft/client/gui/font/glyphs/BakedSheetGlyph up F
+accessible field net/minecraft/client/gui/font/glyphs/BakedSheetGlyph down F
+accessible field net/minecraft/client/gui/font/glyphs/BakedSheetGlyph u0 F
+accessible field net/minecraft/client/gui/font/glyphs/BakedSheetGlyph v0 F
+accessible field net/minecraft/client/gui/font/glyphs/BakedSheetGlyph u1 F
+accessible field net/minecraft/client/gui/font/glyphs/BakedSheetGlyph v1 F
+
 # General rendering
 accessible field com/mojang/blaze3d/opengl/GlBuffer handle I
 accessible method com/mojang/blaze3d/vertex/VertexFormat <init> (Ljava/util/List;Ljava/util/List;Lit/unimi/dsi/fastutil/ints/IntList;I)V
